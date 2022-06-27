@@ -1,0 +1,247 @@
+TITR 'PORTIQUE 3D'													;
+
+OPTI DIME 3 ELEM CUB8												;
+* EPTR = espessura da linha para desenho               				;
+OPTI 'EPTR' 2														;
+
+**** TR : Vrai si on veux trace la geometrie						;
+TR 		= VRAI														;
+
+**** CMODE: vrai si on veux chercher les modes propres
+CMODE 	= VRAI  													;
+
+* Maillage et nb d'éléments dans les directions caractéristiques
+
+**nombre des éléments dans les travers 
+* Vigas
+** de acordo com sua espessura (eixo x)
+npou_h 		= 30													;
+** de acordo com sua altura (eixo z)
+npou_v		= 10													;
+** de acordo com sua largura (eixo y)									
+npou_e		= 5														;
+**nombre des éléments dans les poteaux
+* Pilares
+** suivant sa hauteur (axe de z)
+npot_v 		= 30													;
+** suivant sa  longeur (axe de x)
+npot_h		= 5														;
+** suivant sa largeur (axe de y)
+npot_e		= npou_e												;
+
+** creation des differentes parties pour assurrer le contact avec les poteaux 
+***parties a proximite des extremites
+nlan_h1		= 10													;
+***parties sous poteaux
+nlan_h2		= npot_h												;
+*** parties entre les poteaux ou sous les travers
+nlan_h3		= npou_h												;
+** suivant sa  largeur (axe de y)
+
+** creation des differentes parties pour assurrer le contact avec les poteaux 
+***parties non connectees aux poteaux
+nlan_e1		= npot_e												;
+***parties connectees aux poteaux
+nlan_e2		= 2														;
+
+** suivant sa hauteur (axe de z)
+nlan_v 		= 10	;
+
+epsilon = 1E-6;
+
+
+***------------------------------------------------------------------***
+***----------------------DONNEES GEOMETRIQUES------------------------***
+***------------------------------------------------------------------***
+***Dimensions de la langrine
+HaLong 		= 0.25													;
+EpLong 		= 0.08													;
+LoLong 		= 0.06													;
+***Dimensions de la poutre (entre deux potaux) 
+HaPou 		= 0.06 													;
+EpPou 		= 0.03 												    ;							
+LoPou 		= ((3.0 - (0.06*6)) / (6-1))						    ;
+***Dimensions du poteau
+NBPot 		= 2														;
+LaPot 		= 0.06													;
+HaPot 		= 0.528													;
+EpPot 		= 0.03													;
+***dimensions partie de connexion entre poutre et poteaux
+HaNoeu 		= HaPou													;
+LoNoeu 		= LaPot													;
+EpNoeu 		= EpPot													;
+* LoTrav désigne la distance de poutre entre deux poteaux, de nu à nu
+LoTrav 		= LoPou - LaPot											;
+
+
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+***--------------------DEFINITION DE LA GEOMETRIE--------------------*** 
+***------------------------------------------------------------------***
+
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+*------------------Géométrie de la longrine--------------------------***
+***------------------------------------------------------------------***
+
+Debord 		= 0.5 * (LoLong - (((NBPot-1) * LoPou ) + (NBPot*LaPot)));
+EBORD		=  (0.08 - EpPot)										;
+* Définition de la longrine depuis sa face inférieure
+PLong1 		= 0. 0. 0												;
+PLong2 		= PLong1 PLUS (0. EpPot 0.)								;
+PLong3 		= PLong2 PLUS (Lapot. EpPot 0.)							;
+PLong4 		= PLong3 PLUS (Lapot 0. 0.)								;
+LLong1 		= DROI npot_h PLong1 PLong2							;
+Llong2 		= DROI npot_e PLong2 PLong3							;
+Llong3 		= DROI npot_h PLong3 PLong4							;
+Llong4 		= DROI npot_e PLong4 PLong1								;
+
+SLong 		= (DALL Llong1 Llong2 Llong3 Llong4) COUL CARA			;
+
+* TRAC SLong;
+VLong 		= SLong VOLU 0.25 'TRANS' (0. 0. HaLong)				;
+TRAC VLong;
+
+***------------------------------------------------------------------***
+*--------------------Géométrie des poteaux---------------------------***
+***------------------------------------------------------------------***
+
+* Définition du poteau 1 depuis sa face inférieure
+PPot1	 	= Debord 0. 0.25										;
+PPot2 		= Debord Eppot 0.25 									;
+PPot3 		= (Debord + LaPot) Eppot 0.25							;
+PPot4 		= (Debord + LaPot) 0. 0.25						    ;
+LPot1 		= DROI npot_e PPot1 PPot2								;
+LPot2 		= DROI npot_h PPot2 PPot3								;
+LPot3 		= DROI npot_e PPot3 PPot4								;
+LPot4 		= DROI npot_h PPot4 PPot1								;
+SPot1 		= (DALL LPot1 LPot2 LPot3 LPot4) COUL ROUG				; 
+VPot1 		= SPot1 VOLU npot_v 'TRANS' (0. 0. HaPot)				;
+* TRAC CACH VPot1													;
+
+* L'operateur NBEL donne le nombre d'elements contenus dans une geometrie
+nbEDPot1	= NBEL VPot1											;
+LIST nbEDPot1														;
+* Création des poteaux i (i= 2 à 6) par duplication du poteau i-1
+VPot2 		= VPot1 PLUS ((LoPou + LaPot) 0. 0.)					;
+* VPot3 		= VPot2 PLUS ((LoPou + LaPot) 0. 0.)					;
+* VPot4 		= VPot3 PLUS ((LoPou + LaPot) 0. 0.)					;
+* VPot5 		= VPot4 PLUS ((LoPou + LaPot) 0. 0.)					;
+* VPot6 		= VPot5 PLUS ((LoPou + LaPot) 0. 0.)					;
+***------------------------------------------------------------------***
+*----------------------Géométrie des noeuds--------------------------***
+***------------------------------------------------------------------***
+* Création des noeuds 1 à 6
+SNoeu1 		= SPot1 PLUS (0. 0. HaPot)								;
+VNoeu1 		= SNoeu1 VOLU npou_v 'TRANS' (0. 0. HaNoeu) COUL VERT	;
+VNoeu2 		= VNoeu1 PLUS ((LoPou + LaPot) 0. 0.)					;
+* VNoeu3 		= VNoeu2 PLUS ((LoPou + LaPot) 0. 0.)					;
+* VNoeu4 		= VNoeu3 PLUS ((LoPou + LaPot) 0. 0.)					;
+* VNoeu5 		= VNoeu4 PLUS ((LoPou + LaPot) 0. 0.)					;
+* VNoeu6 		= VNoeu5 PLUS ((LoPou + LaPot) 0. 0.)					;
+
+***------------------------------------------------------------------***
+*--------------------Géométrie des poutres---------------------------***
+***------------------------------------------------------------------***
+	
+
+************************************************************************
+******Procedure pour creer la geometrie d une poutre avec fissure*******
+************************************************************************
+DEBP MACKBCRA P*POINT PF*POINT Lon*FLOTTANT hau*FLOTTANT EPA*FLOTTANT 
+	Lof*FLOTTANT Haf*FLOTTANT  N1*FLOTTANT N11*FLOTTANT N2*entier 
+	N3*entier N4*FLOTTANT N5*FLOTTANT  								;	
+*** P : Coordonees du point d origine de la poutre
+*** PF : Coordonees du point d origine de la fissure
+*** Lon : longueur de la poutre (distance entre deux poteaux (clear span)
+*** hau : hauteur de la section de poutre
+*** Epa : epaisseur de la section (b) suivant y
+*** Lof : longueur de la fissure (distance entre ses levres (epaisseur))
+*** haf : hauteur de la fissure suivant z 
+*** !!!!! haf doit etre inferieure a la moitie de la hauteur poutre hau
+
+*** n1 : densite d elements dans la partie de poutre avant fissure
+*** n11: densite d elements dans la partie de poutre apres fissure
+*** n2 : nombre d elements dans la hauteur de la section de la poutre
+*** n3 : nombre d elements dans l epaisseur de la poutre 
+*** n4 : densite d elements dans la hauteur de la fissure (haf)
+*** n5 : densite d elements dans l epaisser de la fissure (lof)
+DENS n1																;
+PPou1		= P														;
+DENS n4																;
+PPou2 		= PF													;
+DENS n5																;
+PPou3 		= PPou2 PLUS (0. 0. haf)								;
+PPou4 		= PPou3 PLUS (lof 0. 0.)								;
+DENS n4																;
+PPou5		= PPou2 PLUS (lof 0. 0.)								;
+DENS n11															;
+PPou6		= PPou1 PLUS (lon  0. 0.)								;
+DENS n11															;
+PPou7		= PPou6 PLUS (0. 0. hau)								;
+DENS n4																;
+PPou8		= PPou5 PLUS (0. 0. hau)								;
+DENS n5																;
+PPou9		= PPou8 PLUS (0. 0. (0. - haf))							;
+PPou10		= PPou9 PLUS ((0. - lof) 0. 0.)							; 
+DENS n4																;
+PPou11		= PPou2 PLUS (0. 0. hau)								;
+DENS n1																;
+PPou12		= PPou1 PLUS (0. 0. hau)								;
+  
+LPou1 		= DROI PPou1 PPou2 'DINI' n1 'DFIN' n4					;
+LPou2 		= DROI PPou2 PPou3 'DINI' n4 'DFIN' n5					;
+LPou3 		= DROI PPou3 PPou4 'DINI' n5 'DFIN' n5					;
+LPou4 		= DROI PPou4 PPou5 'DINI' n5 'DFIN' n4					;
+LPou5 		= DROI PPou5 PPou6 'DINI' n4 'DFIN' n11					;
+LPou6 		= DROI n2 PPou6 PPou7									;
+LPou7 		= DROI PPou7 PPou8 'DINI' n11 'DFIN' n4					;
+LPou8		= DROI PPou8 PPou9 'DINI' n4 'DFIN' n5					;
+LPou9		= DROI PPou9 PPou10 'DINI' n5 'DFIN' n5					;
+LPou10		= DROI PPou10 PPou11 'DINI' n5 'DFIN' n4				;
+LPou11		= DROI PPou11 PPou12 'DINI' n4 'DFIN' n1				;
+LPou12		= DROI n2 PPou12 PPou1									;											
+SPou 		= (SURF PLAN (LPou1 ET LPou2 ET LPou3 ET LPou4 ET LPou5
+ET LPou6 ET LPou7 ET LPou8 ET LPou9 ET LPou10 ET LPou11 ET LPou12 )) 
+COUL OLIV															; 
+VPou 		= SPou VOLU n3 'TRANS' (0. Epa 0.)						;
+*TRAC VPou1;
+* nbEDPou 	= NBEL VPou												;
+* LIST nbEDPou														;
+**** la procedure retourne le volume de la poutre cree
+FINP VPou															;
+
+***------------------------------------------------------------------***
+***------------------------Poutre avec fissures----------------------***
+***------------------------------------------------------------------***
+*** epaisseur de la fissure (1 mm)
+lof 		= 0.001 												;
+*** hauteur de la fissure (4 cm)									;
+haf			= 0.02													;
+
+*** Valeurs des densites locales (taille locale des elements)
+n_lon1 		= 0.005 												;
+n_lon2 		= 0.005 												;
+n_lof 		= 0.001 												;
+n_haf 		= 0.005													;
+*** Point d origine de  la poutre
+PPOU3 		= ((Debord + LoNoeu) 0. (0.25 + HaPot)) 				;
+*** position de la fissure
+PFIPOU3 	= ((Debord + (5*LoNoeu)) 0. (0.25 + HaPot))				;
+
+VPou1 		= MACKBCRA PPOU3 PFIPOU3 LoPou haPou EpPou lof haf 
+				n_lon1 n_lon2 npou_v npou_e n_haf n_lof				;
+
+***------------------------------------------------------------------***
+***---------------------Création du volume global--------------------***
+***------------------------------------------------------------------***
+Vmulti 		=  VPou1 ET VPot1 ET VPot2 ET VNoeu1 ET VNoeu2   	;
+
+****J ai choisit 1.0E-5 car l epaisser de la fissure est inf. a 1.0E-4
+ELIM VMulti 1.0E-5													    ;
+SI TR																    ;
+	t 		= NBNO VMulti												;
+	TRAC VMulti CACH 'TITR' (CHAI 'nb des noeuds : 't'')				;
+FINSI 																    ;
+
+

@@ -1,0 +1,24 @@
+DEBP MACKBEAM P*POINT Lon*FLOT hau*FLOT EPA*FLOT N1*FLOT N2*FLOT N3*FLOT ;	
+	OPTI DIME 3 ELEM CUB8;
+*** P : Coordonees du point d origine
+*** Lon : longueur de la poutre (distance entre deux poteaux (clear span)
+*** hau : hauteur de la section de poutre
+*** Epa : epaisseur de la section (b) suivant y
+*** n1 : nombre d elements dans la longueur
+*** n2 : nombre d elements dans la hauteur
+*** n3 : nombre d elements dans l epaisseur 
+	PPou1		= P														;
+	PPou2 		= PPou1 PLUS (0. Epa 0.)								;
+	PPou3 		= PPou2 PLUS (Lon 0. 0.)								;
+	PPou4 		= PPou1 PLUS (Lon 0. 0.)								;
+	LPou1 		= DROI n3 PPou1 PPou2									;
+	LPou2 		= DROI n1 PPou2 PPou3									;
+	LPou3 		= DROI n3 PPou3 PPou4									;
+	LPou4 		= DROI n1 PPou4 PPou1									;
+	SPou 		= (DALL LPou1 LPou2 LPou3 LPou4) COUL BLEU				; 
+	VPou 		= SPou VOLU n2 'TRANS'(0. 0. hau)						;
+	TRAC VPou;
+* nbEDPou 	= NBEL VPou												;
+* LIST nbEDPou														;
+**** la procedure retourne le volume de la poutre cree
+FINP VPou															;

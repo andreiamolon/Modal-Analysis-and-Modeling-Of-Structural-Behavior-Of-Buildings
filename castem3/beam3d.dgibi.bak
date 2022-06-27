@@ -1,0 +1,110 @@
+TITR 'Viga 3D'												;
+
+OPTI DIME 3 ELEM CUB8											;
+
+****----------------------MALHA------------------------***
+* Vigas 
+* De acordo com sua espessura (eixo x)
+nelem_e 		= 5												;
+* De acordo com sua altura (eixo z)
+nelem_a		= 10												;
+* De acordo com sua largura (eixo y)									
+nelem_l		= 5													;
+
+
+****----------------DADOS GEOMETRICOS------------------***
+
+***Dimencoes da viga (entre dois pilares) 
+HViga 		= 0.50 												;
+EViga 		= 0.30 												;							
+LViga 		= 5												    ;
+
+
+***---------------DEFINICAO DA GEOMETRIA---------------***
+***-----------------GEOMETRIA DAS VIGAS----------------***
+DEBP VIGA P*POINT Lon*FLOTTANT hau*FLOTTANT EPA*FLOTTANT 
+	N1*entier N2*entier N3*entier 								;	
+*** P : Coordenadas do ponto de origem
+*** Lon : lagura da viga (distancia entre 2 pilares, vao livre)
+*** hau : altura da viga
+*** Epa : espessura da viga
+*** n1 : numero de elementos na largura
+*** n2 : numero de elementos na altura
+*** n3 : numero de elementos na espessura 
+	PPou1		= P														;
+	PPou2 		= PPou1 PLUS (0. Epa 0.)								;
+	PPou3 		= PPou2 PLUS (Lon 0. 0.)								;
+	PPou4 		= PPou1 PLUS (Lon 0. 0.)								;
+	LPou1 		= DROI n3 PPou1 PPou2									;
+	LPou2 		= DROI n1 PPou2 PPou3									;
+	LPou3 		= DROI n3 PPou3 PPou4									;
+	LPou4 		= DROI n1 PPou4 PPou1									;
+    SViga 		= (DALL LPou1 LPou2 LPou3 LPou4) COUL VERT				; 
+	VViga 		= SViga VOLU n2 'TRANS' (0. 0. hau)						;
+	NelemViga 	= NBEL VViga											;
+	LIST NelemViga														;
+
+FINP SViga ET VViga															;
+
+***-----------------------Viga c Fissuras----------------------***
+
+SViga1 		= VIGA (0. 0. 1.) 
+					LViga HViga EViga nelem_e nelem_a nelem_l		;
+VViga1		= VIGA (0. 0. 1.) 
+					LViga HViga EViga nelem_e nelem_a nelem_l		;
+					
+SFis 		= VIGA ((0.+LViga). 0. 1.1) 
+					0.05 0.3 0.005 6 6 8		;					
+VFis		= VIGA ((0.+LViga). 0. 1.1) 
+					0.05 0.3 0.005 6 6 8		;
+					
+SViga2      = VIGA (0.+(0.05+LViga). 0. 1.) 
+					LViga HViga EViga nelem_e nelem_a nelem_l		;					
+VViga2 		= VIGA (0.+(0.05+LViga). 0. 1.) 
+					LViga HViga EViga nelem_e nelem_a nelem_l		;
+					
+				
+					
+***-------------------- Volume Global------------------***
+
+VTot 		= VViga1 ET VFis ET VViga2 							  ;
+ELIM VTot 1.0E-5												  ;
+TRAC VTot CACH 													  ;
+
+
+***---------------------DEFINITION DES MODELES-----------------------***
+MoViga 		= MODE VTot MECANIQUE ELASTIQUE ISOTROPE			  ;
+
+***-------------------DEFINITION DES MATERIAUX-----------------------***
+MaViga 	= MATE MoViga YOUN 31.0E9 NU 0.2 RHO 2400       	  	  ; 
+
+
+***------------DEFINITION DES CONDITIONS AUX LIMITES-----------------***
+CLViga1 		= BLOQ UX UY UZ RX RY RZ SViga1  						;
+CLViga2 		= BLOQ UX UY UZ RX RY RZ SViga2							;
+Rig1			= RIGI MoViga MaViga 									;
+RigTot 			= Rig1 'ET' CLViga1 'ET' CLViga2						;
+
+***---------------------Modes de vibration --------------------------***  
+*Matrice de masse
+	MTotal = MASS MoViga MaViga 										; 
+*Fréqunces d'intervalle de recherche
+	FreqInf 	= 1. 													;
+	FreqSup 	= 500. 													;
+*Extraire les valeurs et vecteurs propres
+	TB			= VIBR 'INTERVALLE' FreqInf FreqSup RigTot MTotal 'IMPR' VRAI ;
+
+***-------------------------Post traitement--------------------------***
+	NMOD		= 6 													;	
+	I			= 0 													;
+	REPETER BLOC1 NMOD 													;
+	I			= I+1 													;
+	FRQ			= TB.MODES.I.FREQUENCE 									;
+	NUM			= TB.MODES.I.NUMERO_MODE 								; 
+	TITRE 'DEFORME MODALE' NUM 'FREQUENCE' FRQ 							;
+	CHP1		= TB.MODES.I.DEFORMEE_MODALE 							;
+	DEF0 		= DEFO VTot CHP1 0. BLAN 								;
+	DEF1		= DEFO Vtot CHP1 ROUG 									;
+	TRAC (DEF0 ET DEF1)				 									;
+	FIN BLOC1 															;  
+	

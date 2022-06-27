@@ -1,0 +1,21 @@
+TITR 'PORTICO SIMPLES 3D';
+OPTI DIME 3 ELEM CUB8;
+
+************************************************************************
+* MAILLAGE
+************************************************************************
+P1 = 0. 0. 0.;
+P2 = 4. 0. 0.;
+P3 = 4. 2. 0.;
+P4 = 0. 2. 0.;
+*
+L1 = D 10 P1 P2;
+L2 = D 5 P2 P3;
+L3 = D 10 P3 P4;
+L4 = D 5 P4 P1;
+
+* Dall = O operador DALLER constrói uma superfície, seja a partir dos dados de contorno ou a partir de uma representação polinomial.
+SUR1 = DALL L1 L2 L3 L4;
+V1=SUR1 VOLU 4 TRAN (0. 0. 4.) ;
+
+TRAC CACH (SUR1 ET V1);

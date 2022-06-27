@@ -1,0 +1,127 @@
+ TITR 'Viga 3D'													; 
+   
+ OPTI DIME 3 ELEM CUB8											; 
+   
+ ****----------------------MALHA------------------------*** 
+ * Vigas 
+ * De acordo com sua espessura (eixo x) 
+ nelem_e 		= 5												; 
+ * De acordo com sua altura (eixo z) 
+ nelem_a		= 10												; 
+ * De acordo com sua largura (eixo y)									 
+ nelem_l		= 5													; 
+ * Pilares 
+ * De acordo com sua espessura (eixo x) 
+ npil_e		= 5													; 
+ * De acordo com sua altura (eixo z) 
+ npil_h 		= 10												; 
+ * De acordo com sua largura (eixo y)							 
+ npil_l		= nelem_l											; 
+ * Fundacao 
+ * De acordo com sua espessura (eixo x) 
+ nfund_e		= 5													; 
+ * De acordo com sua altura (eixo z) 
+ nfund_h 		= 5											; 
+ * De acordo com sua largura (eixo y)							 
+ nfund_l		= nelem_l											; 
+   
+ ****----------------DADOS GEOMETRICOS------------------*** 
+ ***Dimensions da Fundacao 
+ HaFund 		= 0.25												; 
+ EFund 		= 0.05												; 
+   
+ ***Dimencoes da viga (entre dois pilares) 
+ HViga 		= 0.5 												; 
+ EViga 		= 0.05 												;							 
+   
+ ***Dimencoes dos pilares 
+ NPil 		= 2													; 
+ LaPil 		= 0.05												; 
+ HaPil 		= 1.25												; 
+ EPil 		= 0.05												; 
+ LViga 		= (3.0-(LaPil*NPil)) / (NPil-1)						; 
+ LFund 		= (LViga+0.05+Lviga+LaPil+Lapil)					; 
+ ***Dimencoes da conexao entre viga e pilar 
+ HaNoeu 		= HViga												; 
+ LoNoeu 		= LaPil												; 
+ EpNoeu 		= Epil												; 
+ * LoTrav e a distancia da viga entre dois pilares 
+ LoTrav 		= LViga - LaPil										; 
+ LIST Lotrav														; 
+   
+ ***---------------DEFINICAO DA GEOMETRIA---------------*** 
+ ***-----------------GEOMETRIA DAS VIGAS----------------*** 
+ DEBP VIGA P*POINT Lon*FLOTTANT hau*FLOTTANT EPA*FLOTTANT 
+ 	N1*entier N2*entier N3*entier 								;	 
+ *** P : Coordenadas do ponto de origem 
+ *** Lon : lagura da viga (distancia entre 2 pilares, vao livre) 
+ *** hau : altura da viga 
+ *** Epa : espessura da viga 
+ *** n1 : numero de elementos na largura 
+ *** n2 : numero de elementos na altura 
+ *** n3 : numero de elementos na espessura 
+ 	PPou1		= P														; 
+ 	PPou2 		= PPou1 PLUS (0. Epa 0.)								; 
+ 	PPou3 		= PPou2 PLUS (Lon 0. 0.)								; 
+ 	PPou4 		= PPou1 PLUS (Lon 0. 0.)								; 
+ * O operador DROI constrói o segmento de linha unindo dois pontos. 
+ 	LPou1 		= DROI n3 PPou1 PPou2									; 
+ 	LPou2 		= DROI n1 PPou2 PPou3									; 
+ 	LPou3 		= DROI n3 PPou3 PPou4									; 
+ 	LPou4 		= DROI n1 PPou4 PPou1									; 
+ * O operador DALLER constrói uma superfície, seja a partir dos dados de contorno ou a partir de uma representação polinomial. 
+ 	SViga 		= (DALL LPou1 LPou2 LPou3 LPou4) COUL VERT				; 
+ * O operador VOLU constrói o volume gerado pela translacao ou rotação de uma superfície. 
+ 	VViga 		= SViga VOLU n2 'TRANS' (0. 0. hau)						; 
+ * TRAC VViga															; 
+ * O operador NBEL fornece o número de elementos contidos em um geometria. 
+ 	NelemViga 	= NBEL VViga											; 
+ 	LIST NelemViga														; 
+ * A funcao retornara o volume da viga criada 
+ FINP VViga															; 
+   
+ ***-----------------------Viga sem Fissuras----------------------*** 
+ VViga1		= VIGA (LaPil. 0. 1.) 
+ 					LViga HViga EViga nelem_e nelem_a nelem_l		; 
+ 					 
+ VFis		= VIGA ((LaPil+LViga). 0. 1.1) 
+ 					0.05 0.3 EViga nelem_e 4 nelem_l		; 
+ 					 
+ 					 
+ VViga2 		= VIGA (LaPil+(0.05+LViga). 0. 1.) 
+ 					LViga HViga EViga nelem_e nelem_a nelem_l		; 
+ 					 
+ 					 
+ VFund 		= VIGA (0. 0. 0.) 
+ 					LFund HaFund EFund nfund_e nfund_h nfund_l		; 
+ 					 
+ *--------------------GEOMETRIA DOS PILARES---------------------------*** 
+   
+ * Definicao do pilar 1 ate sua face inferior 
+ PPot1	 	= 0. 0. HaFund.												; 
+ PPot2 		= 0. EPil HaFund. 											; 
+ PPot3 		= LaPil EPil HaFund.										; 
+ PPot4 		= LaPil. 0. HaFund.											; 
+ LPot1 		= DROI npil_e PPot1 PPot2								; 
+ LPot2 		= DROI npil_l PPot2 PPot3								; 
+ LPot3 		= DROI npil_e PPot3 PPot4								; 
+ LPot4 		= DROI npil_l PPot4 PPot1								; 
+ SPot1 		= (DALL LPot1 LPot2 LPot3 LPot4) COUL ROUG				; 
+ VPot1 		= SPot1 VOLU npil_h 'TRANS' (0. 0. HaPil)				; 
+ * TRAC VPot1 CACH COUL ROUG; 
+ nbEDPot1	= NBEL VPot1											; 
+ LIST nbEDPot1														; 
+ * Criacao dos Demais Pilares i (i= 2 à n) pela duplicacao da viga i-1 
+ VPot2 		= VPot1 PLUS ((2*Lviga+0.05+LaPil) 0. 0.)					; 
+ * VPot3 		= VPot2 PLUS ((LoPou + LaPot) 0. 0.)					; 
+ * VPot4 		= VPot3 PLUS ((LoPou + LaPot) 0. 0.)					; 
+ * VPot5 		= VPot4 PLUS ((LoPou + LaPot) 0. 0.)					; 
+ * VPot6 		= VPot5 PLUS ((LoPou + LaPot) 0. 0.)					; 
+ 					 
+ 					 
+ ***--------------------Criacao do Volume Global------------------*** 
+ VTot 		= VViga1 ET VFis ET VViga2 ET VPot1 ET VPot2 ET VFund  ; 
+ TRAC VTot CACH 													   ; 
+   
+ fin/ 
+ fin; 

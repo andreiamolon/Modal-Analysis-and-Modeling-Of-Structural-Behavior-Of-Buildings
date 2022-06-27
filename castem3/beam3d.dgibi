@@ -1,0 +1,122 @@
+TITR 'Viga 3D'												;
+
+OPTI DIME 3 ELEM CUB8										;
+
+****----------------------MALHA------------------------***
+* Vigas 
+* De acordo com sua espessura (eixo x)
+nelem_e 		= 100											;
+* De acordo com sua altura (eixo z)
+nelem_a		= 10												;
+* De acordo com sua largura (eixo y)							
+nelem_l		= 10												;
+
+
+****----------------DADOS GEOMETRICOS------------------***
+
+***Dimencoes da viga (entre dois pilares) 
+HViga 		= 0.50 												;
+EViga 		= 0.30 												;							
+LViga 		= 5												    ;
+
+
+***---------------DEFINICAO DA GEOMETRIA---------------***
+***-----------------GEOMETRIA DAS VIGAS----------------***
+DEBP VIGA P*POINT Lon*FLOTTANT hau*FLOTTANT EPA*FLOTTANT 
+	N1*entier N2*entier N3*entier 								;	
+*** P : Coordenadas do ponto de origem
+*** Lon : lagura da viga (distancia entre 2 pilares, vao livre)
+*** hau : altura da viga
+*** Epa : espessura da viga
+*** n1 : numero de elementos na largura
+*** n2 : numero de elementos na altura
+*** n3 : numero de elementos na espessura 
+	PPou1		= P													;
+	PPou2 		= PPou1 PLUS (0. Epa 0.)							;
+	PPou3 		= PPou2 PLUS (Lon 0. 0.)							;
+	PPou4 		= PPou1 PLUS (Lon 0. 0.)							;
+	LPou1 		= DROI n3 PPou1 PPou2								;
+	LPou2 		= DROI n1 PPou2 PPou3								;
+	LPou3 		= DROI n3 PPou3 PPou4								;
+	LPou4 		= DROI n1 PPou4 PPou1								;
+    SViga 		= (DALL LPou1 LPou2 LPou3 LPou4) COUL VERT			; 
+	VViga 		= SViga VOLU n2 'TRANS' (0. 0. hau)					;
+	NelemViga 	= NBEL VViga										;
+	LIST NelemViga													;
+
+FINP VViga															;
+
+***-----------------------Viga c Fissuras----------------------***
+PPou1		= (0. 0. 1.)											;
+PPou2 		= PPou1 PLUS (0. EViga 0.)								;
+PPou3 		= PPou2 PLUS (0. 0. HViga)								;
+PPou4 		= PPou1 PLUS (0. 0. HViga)								;
+LPou1 		= DROI nelem_e PPou1 PPou2								;
+LPou2 		= DROI nelem_a PPou2 PPou3								;
+LPou3 		= DROI nelem_e PPou3 PPou4								;
+LPou4 		= DROI nelem_a PPou4 PPou1								;
+SViga1 		= (DALL LPou1 LPou2 LPou3 LPou4) COUL VERT				; 
+
+TRAC SViga1 CACH;
+
+PPou1		= (LViga. 0. 1.)											;
+PPou2 		= PPou1 PLUS (0. EViga 0.)								;
+PPou3 		= PPou2 PLUS (0. 0. HViga)								;
+PPou4 		= PPou1 PLUS (0. 0. HViga)								;
+LPou1 		= DROI nelem_e PPou1 PPou2								;
+LPou2 		= DROI nelem_a PPou2 PPou3								;
+LPou3 		= DROI nelem_e PPou3 PPou4								;
+LPou4 		= DROI nelem_a PPou4 PPou1								;
+S2Viga1 	= (DALL LPou1 LPou2 LPou3 LPou4) COUL VERT				;
+TRAC S2Viga1 CACH;
+
+tot = SViga1 ET S2Viga1;
+TRAC tot CACH;
+ 
+
+PPouV1		= (5.05 0. 1.)											;
+PPouV2 		= PPouV1 PLUS (0. EViga 0.)								;
+PPouV3 		= PPouV2 PLUS (0. 0. HViga)								;
+PPouV4 		= PPouV1 PLUS (0. 0. Hviga)								;
+LPouV1 		= DROI nelem_e PPouV1 PPouV2							;
+LPouV2 		= DROI nelem_a PPouV2 PPouV3							;
+LPouV3 		= DROI nelem_e PPouV3 PPouV4							;
+LPouV4 		= DROI nelem_a PPouV4 PPouV1							;
+SViga2 		= (DALL LPouV1 LPouV2 LPouV3 LPouV4) COUL VERT			;
+* TRAC SViga2 CACH;
+
+PPouV1		= ((5.05+LViga) 0. 1.)									;
+PPouV2 		= PPouV1 PLUS (0. EViga 0.)								;
+PPouV3 		= PPouV2 PLUS (0. 0. HViga)								;
+PPouV4 		= PPouV1 PLUS (0. 0. Hviga)								;
+LPouV1 		= DROI nelem_e PPouV1 PPouV2							;
+LPouV2 		= DROI nelem_a PPouV2 PPouV3							;
+LPouV3 		= DROI nelem_e PPouV3 PPouV4							;
+LPouV4 		= DROI nelem_a PPouV4 PPouV1							;
+S2Viga2 		= (DALL LPouV1 LPouV2 LPouV3 LPouV4) COUL VERT		;
+
+* SVigaTot= SViga2 ET S2Viga2;
+* TRAC SVigaTot CACH 												;
+
+* tot = SViga1 ET S2Viga1 ET SViga2 ET S2Viga2;
+* TRAC tot CACH;
+
+VViga1		= VIGA (0. 0. 1.) 
+					LViga HViga EViga nelem_e nelem_a nelem_l		;		
+SFis 		= VIGA ((0.+LViga). 0. 1.1) 
+					0.05 0.3 0.005 6 6 8		;					
+VFis		= VIGA ((0.+LViga). 0. 1.1) 
+					0.05 0.3 0.005 6 6 8		;
+
+VViga2 		= VIGA (0.+(0.05+LViga). 0. 1.) 
+    			LViga HViga EViga nelem_e nelem_a nelem_l		;
+					
+				
+					
+***-------------------- Volume Global------------------***
+
+VTot 		= VViga1 ET VFis ET VViga2 							  ;
+TRAC VTot CACH 													  ;
+VVigas = VViga1 ET VViga2										  ; 
+
+

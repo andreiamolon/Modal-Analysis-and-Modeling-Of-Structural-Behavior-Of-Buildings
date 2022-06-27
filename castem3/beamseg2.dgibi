@@ -1,0 +1,75 @@
+TITR 'Viga 3D'												;
+
+OPTI DIME 3 ELEM SEG2										;
+
+****----------------------MALHA------------------------***
+* Vigas 
+* De acordo com sua espessura (eixo x)
+nelem_e 		= 2											;
+* De acordo com sua altura (eixo z)
+nelem_a		= 2												;
+* De acordo com sua largura (eixo y)									
+nelem_l		= 2												;
+
+****----------------DADOS GEOMETRICOS------------------***
+
+***Dimencoes da viga (entre dois pilares) 
+HViga 		= 0.20 												;
+EViga 		= 0.20 												;							
+LViga 		= 0.20												    ;
+
+P1 = 0. 0. 0. ;
+P2 = 1. 0. 0. ;
+P3 = 2. 0. 0. ;
+
+POUTRE = P1 DROI P3 ;
+* POUTRE2 = P2 DROI P3 ;
+* POUTRE = POUTRE1 ET POUTRE2;
+
+TRAC POUTRE;
+
+***---------------------DEFINITION DES MODELES-----------------------***
+
+MoViga 		= MODE POUTRE MECANIQUE ELASTIQUE ISOTROPE POUT;
+			
+
+***-------------------DEFINITION DES MATERIAUX-----------------------***
+
+
+MaViga 	= MATE MoViga YOUN 2.0E10 NU 0.2 RHO 2500 SECT 40E-3  INRZ 133E-6 INRY 133E-6 TORS 0 ;
+MaTot = MaViga ;
+
+***------------DEFINITION DES CONDITIONS AUX LIMITES-----------------***
+
+COND1=BLOQ DEPL ROTA P1 ;
+COND2=BLOQ DEPL ROTA P3 ;
+ClTotal = COND1 ET COND2 ;
+
+*** Rigidite totale
+Rig1			= RIGI MoViga MaTot 									;
+RigTot 			= Rig1 ET CLTotal										;
+
+***---------------------Modes de vibration --------------------------***  
+*Matrice de masse
+MTotal = MASS MoViga MaTot		 									; 
+
+*Fréqunces d'intervalle de recherche
+FreqInf 	= 1. 													;
+FreqSup 	= 1000. 													;
+*Extraire les valeurs et vecteurs propres
+TB			= VIBR 'INTERVALLE' FreqInf FreqSup RigTot MTotal 'IMPR' VRAI ;
+
+***-------------------------Post traitement--------------------------***
+	NMOD		= 6 													;	
+	I			= 0 													;
+	REPETER BLOC1 NMOD 													;
+	I			= I+1 													;
+	FRQ			= TB.MODES.I.FREQUENCE 									;
+	NUM			= TB.MODES.I.NUMERO_MODE 								; 
+	TITRE 'DEFORME MODALE' NUM 'FREQUENCE' FRQ 							;
+	CHP1		= TB.MODES.I.DEFORMEE_MODALE 							;
+	DEF0 		= DEFO POUTRE CHP1 0. BLAN 								;
+	DEF1		= DEFO POUTRE CHP1 ROUG 									;
+	TRAC CACH (DEF0 ET DEF1)				 							;
+	FIN BLOC1 															;  
+	
