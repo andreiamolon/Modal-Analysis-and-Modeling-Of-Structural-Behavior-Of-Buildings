@@ -1,0 +1,107 @@
+TITR 'Viga 3D'												;
+
+OPTI DIME 3 ELEM CUB8										;
+
+****----------------------MESH------------------------***
+* Beans 
+* According to the thickness (eixo x)
+nelem_e 		=	10									;
+* According to the height (eixo z)
+nelem_a		= 10												;
+* According to the lenght (eixo y)								
+nelem_l		= 200												;
+
+****----------------GEOMETRIC DATA------------------***
+
+***Beam dimensions***
+HViga 		= 0.20 												;
+EViga 		= 0.20 												;							
+LViga 		= 4												    ;
+
+
+LEF        = (LViga / (nelem_l + 1.0)) ;
+LIST LEF;
+
+P1 = 0. 0. 0. ;
+P2 = 0. EViga 0. ;
+P3 = 0. EViga HViga ;
+P4 = 0. 0. HViga ;
+P5 = LViga 0. 0.;
+P6 = LViga EViga 0. ;
+P7 = LViga. EViga HViga ;
+P8 = LViga. 0. HViga ;
+
+L1 = P1 DROI nelem_e P2;
+L2 = P1 DROI nelem_l P5;
+L3 = P5 DROI nelem_e P6;
+L4 = P2 DROI nelem_l P6;
+L5 = P4 DROI nelem_l P8;
+L6 = P2 DROI nelem_a P3;
+L7 = P3 DROI nelem_e P4;
+L8 = P4 DROI nelem_a P1;
+L9 = P6 DROI nelem_a P7;
+L10 = P7 DROI nelem_e P8;
+L11 = P8 DROI nelem_a P5;
+
+
+SURF1 = (DALL L1 L6 L7 L8) COUL VERT   ;
+* TRAC SURF1;
+SURF2 = (DALL L3 L9 L10 L11) COUL VERT;
+* TRAC SURF2;
+V1 = SURF1 VOLU tran((LViga - LEF) 0. 0.) nelem_l;
+* TRAC CACH V1;
+V2 = SURF2 VOLU tran((-1.0 * LEF)  0. 0.) 1;
+* TRAC CACH V2;
+
+Vtotal = V1 ET V2;
+ELIM Vtotal 1E-5;
+LIST (NBEL Vtotal);
+TRAC CACH Vtotal; 
+
+
+
+
+***---------------------DEFINITION DES MODELES-----------------------***
+
+MoViga 		= MODE Vtotal MECANIQUE ELASTIQUE ISOTROPE ;
+			
+
+***-------------------DEFINITION DES MATERIAUX-----------------------***
+
+MaViga 	= MATE MoViga YOUN 2.0E10 NU 0.2 RHO 2500 ; 
+
+***------------DEFINITION DES CONDITIONS AUX LIMITES-----------------***
+
+COND1=  BLOQ UX   UY   UZ   RX   RY   RZ SURF1 ;
+COND2=  BLOQ UX   UY   UZ   RX   RY   RZ SURF2 ;
+ClTotal = COND1 ET COND2 ;
+
+*** Rigidite totale
+Rig1			= RIGI MoViga MaViga 								;
+RigTot 			= Rig1 ET ClTotal ;
+* ET CLTotal									;
+
+***---------------------Modes de vibration --------------------------***  
+*Matrice de masse
+MTotal = MASS MoViga MaViga		 									; 
+
+*Fréqunces d'intervalle de recherche
+FreqInf 	= 1. 													;
+FreqSup 	= 400. 													;
+*Extraire les valeurs et vecteurs propres
+TB			= VIBR 'INTERVALLE' FreqInf FreqSup RigTot MTotal 'IMPR' VRAI ;
+
+***-------------------------Post traitement--------------------------***
+NMOD		= 6 														;	
+I			= 0 														;
+REPETER BLOC1 NMOD 														;
+	I			= I+1 													;
+	FRQ			= TB.MODES.I.FREQUENCE 									;
+	NUM			= TB.MODES.I.NUMERO_MODE 								; 
+	TITRE 'DEFORME MODALE' NUM 'FREQUENCE' FRQ 							;
+	CHP1		= TB.MODES.I.DEFORMEE_MODALE 							;
+	DEF0 		= DEFO Vtotal CHP1 0. BLAN 								;
+	DEF1		= DEFO Vtotal CHP1 ROUG 								;
+	TRAC CACH (DEF0 ET DEF1)				 							;
+FIN BLOC1 																;  
+	

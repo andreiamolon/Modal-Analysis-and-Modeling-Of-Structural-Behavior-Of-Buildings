@@ -1,0 +1,162 @@
+ TITR 'POUTRE 3D'												; 
+   
+ OPTI DIME 3 ELEM CUB8										; 
+   
+ ****----------------------Maillage------------------------*** 
+ * POUTRE 
+ * suivant sa  longeur (eixo x) 
+ nelem_e 		= 25											; 
+ * suivant sa hauteur (eixo z) 
+ nelem_a		= 10												; 
+ * suivant sa largeur (eixo y)							 
+ nelem_l		= 6											; 
+   
+ * FISSURE 
+   
+ nelemf_e = 1													; 
+ nelemf_a = 8													; 
+ nelemf_l = nelem_l; 
+   
+   
+ ****----------------DONNEES GEOMETRIQUES------------------*** 
+   
+ ***Dimensions de la poutre 
+ HViga 		= 0.20 												; 
+ EViga 		= 0.20 												;							 
+ LViga 		= 4												    ; 
+   
+ ***Dimensions de la fissure 
+ *(mm) 
+ LFis        = 0.078431                                        ; 
+ *(cm) 
+ HFis        = 0.16											  ; 
+ *(cm) 
+ EFis        = EViga                                           ; 
+ Int = (HViga-HFis)/2;													 
+ ***-----------------DEFINITION DE LA GEOMETRIE----------------*** 
+   
+ DEBP VIGA P*POINT Lon*FLOTTANT hau*FLOTTANT EPA*FLOTTANT 
+ 	N1*entier N2*entier N3*entier 								;	 
+ *** P : Coordonees du point d origine 
+ *** Lon : longueur de la poutre 
+ *** hau : hauteur 
+ *** Epa : epaisseur 
+ *** n1 : nombre d elements dans la longueur 
+ *** n2 : nombre d elements dans la hauteur 
+ *** n3 : nombre d elements dans l epaisseur 
+ 	PPou1		= P													; 
+ 	PPou2 		= PPou1 PLUS (0. Epa 0.)							; 
+ 	PPou3 		= PPou2 PLUS (0. 0. hau)							; 
+ 	PPou4 		= PPou1 PLUS (0. 0. hau)							; 
+   
+ 	LPou1 		= DROI n3 PPou1 PPou2								; 
+ 	LPou2 		= DROI n2 PPou2 PPou3								; 
+ 	LPou3 		= DROI n3 PPou3 PPou4								; 
+ 	LPou4 		= DROI n2 PPou4 PPou1								; 
+   
+     SViga 		=(DALL LPou1 LPou2 LPou3 LPou4) COUL VERT			; 
+ * TRAC CACH SViga ; 
+   
+ FINP  SViga											    			; 
+   
+ DEBP FIS P*POINT Lon*FLOTTANT hau*FLOTTANT EPA*FLOTTANT 
+ 	N1*entier N2*entier N3*entier 								;	 
+ *** P : Coordonees du point d origine 
+ *** Lon : longueur de la fissure 
+ *** hau : hauteur 
+ *** Epa : epaisseur 
+ *** n1 : nombre d elements dans la longueur 
+ *** n2 : nombre d elements dans la hauteur 
+ *** n3 : nombre d elements dans l epaisseur 
+ 	PPou1		= P													; 
+ 	PPou2 		= PPou1 PLUS (0. Epa 0.)							; 
+ 	PPou3 		= PPou2 PLUS (0. 0. hau)							; 
+ 	PPou4 		= PPou1 PLUS (0. 0. hau)							; 
+ 	LPou1 		= DROI n3 PPou1 PPou2								; 
+ 	LPou2 		= DROI n2 PPou2 PPou3								; 
+ 	LPou3 		= DROI n3 PPou3 PPou4								; 
+ 	LPou4 		= DROI n2 PPou4 PPou1								; 
+ 		 
+     SFis 		=(DALL LPou1 LPou2 LPou3 LPou4) COUL CARA			; 
+ * TRAC CACH SViga ; 
+ 	V2 		= SFis VOLU n1 'TRANS' (LFis. 0. 0.)				    ; 
+ * TRAC CACH V2 													; 
+ 																	; 
+ FINP V2													    	    ; 
+   
+ coord = (LViga/2)-(Lfis/2); 
+ coord2 = -1*coord; 
+ SViga1      = VIGA (0. 0. 0.) 
+ 					LViga HViga EViga nelem_e nelem_a nelem_l		; 
+ 					 
+ V1 			= SViga1 VOLU nelem_e 'TRANS' (coord 0. 0.)		; 
+ NelemViga1 	= NBEL V1										    ; 
+ LIST NelemViga1													; 
+ 					 
+ * TRAC CACH SViga1 ;	 
+   
+ VFis		= FIS (coord 0. Int) 
+ 					LFis HFis EFis nelemf_e nelemf_a nelemf_l		; 
+ * TRAC CACH VFis ;	 
+   
+ SViga2 		= VIGA (LViga 0. 0.) 
+     			    LViga HViga EViga nelem_e nelem_a nelem_l	; 
+ * TRAC CACH SViga2 ; 
+   
+ V2 			= SViga2 VOLU nelem_e 'TRANS' (coord2 0. 0.) 			; 
+ NelemViga2 	= NBEL V2										    ; 
+ LIST NelemViga2													;					 
+ 	 
+ 				 
+ ***-------------------- Volume Global------------------*** 
+   
+ VTot 		= V1 ET VFis ET V2								; 
+ ELIM VTot 1E-3												; 
+ LIST (NBEL VTot)											; 
+ TRAC VTot CACH 											  	; 
+   
+ ***---------------------DEFINITION DES MODELES-----------------------*** 
+   
+ MoViga 		= MODE VTot MECANIQUE ELASTIQUE ISOTROPE ; 
+ 			 
+   
+ ***-------------------DEFINITION DES MATERIAUX-----------------------*** 
+   
+ MaViga 	= MATE MoViga YOUN 2.0E10 NU 0.2 RHO 2500 ; 
+   
+ ***------------DEFINITION DES CONDITIONS AUX LIMITES-----------------*** 
+   
+ COND1=  BLOQ UX   UY   UZ   RX   RY   RZ SViga1 ; 
+ COND2=  BLOQ UX   UY   UZ   RX   RY   RZ SViga2 ; 
+ ClTotal = COND1 ET COND2 ; 
+   
+ *** Rigidite totale 
+ Rig1			= RIGI MoViga MaViga 								; 
+ RigTot 			= Rig1 ET ClTotal ; 
+ * ET CLTotal									; 
+   
+ ***---------------------Modes de vibration --------------------------*** 
+ *Matrice de masse 
+ MTotal = MASS MoViga MaViga		 									; 
+   
+ *Fréqunces d'intervalle de recherche 
+ FreqInf 	= 1. 													; 
+ FreqSup 	= 2000. 													; 
+ *Extraire les valeurs et vecteurs propres 
+ TB			= VIBR 'INTERVALLE' FreqInf FreqSup RigTot MTotal 'IMPR' VRAI ; 
+   
+ ***-------------------------Post traitement--------------------------*** 
+ NMOD		= 6 														;	 
+ I			= 0 														; 
+ REPETER BLOC1 NMOD 														; 
+ 	I			= I+1 													; 
+ 	FRQ			= TB.MODES.I.FREQUENCE 									; 
+ 	NUM			= TB.MODES.I.NUMERO_MODE 								; 
+ 	TITRE 'DEFORME MODALE' NUM 'FREQUENCE' FRQ 							; 
+ 	CHP1		= TB.MODES.I.DEFORMEE_MODALE 							; 
+ 	DEF0 		= DEFO VTot CHP1 0. BLAN 								; 
+ 	DEF1		= DEFO VTot  CHP1 ROUG 								; 
+ 	TRAC CACH (DEF0 ET DEF1)				 							; 
+ FIN BLOC1 																; 
+ 	 
+ fin; 
