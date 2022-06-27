@@ -1,0 +1,633 @@
+
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+*
+* TEST  : modes propres d une multi-portique 3D en béton armé 
+*
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+*
+* Portique 3D 
+*
+TITR 'PORTIQUE 3D'													;
+***Options generales des traces, elments, calcul.....
+OPTI ECHO 1															;
+SAUT PAGE															;
+OPTI TRAC OPEN														;
+OPTI DIME 3 ELEM CUB8												;
+OPTI 'EPSILON' 'LINEAIRE'                 							;
+OPTI 'EPTR' 2														;
+
+**** CMEC : vrai si on souhaite faire un calcul mecanique sous une force ponctuelle
+CMEC 	= FAUX														;
+**** TR : Vrai si on veux trace la geometrie						;
+TR 		= VRAI														;
+
+**** CMODE: vrai si on veux chercher les modes propres
+CMODE 	= VRAI  													;
+*** 
+** Nom du fichiers de sauvegarde
+NOM_FILE = '11-06-2019_multiportique_reference.sau';
+
+*Maillage et nb d'éléments dans les directions caractéristiques
+**nombre des éléments dans les travers 
+** suivant  sa longueur (axe de x) 
+**/!\ ce nombre doit être impair pour générer la fissure à mi travée
+npou_h 		= 15													;
+** suivant sa hauteur (axe de z)
+npou_v		= 6													;
+** suivant sa largeur (axe de y)									
+npou_e		= 5														;
+
+**nombre des éléments dans les poteaux
+** suivant sa hauteur (axe de z)
+npot_v 		= 15													;
+** suivant sa  longeur (axe de x)
+npot_h		= 5														;
+** suivant sa largeur (axe de y)
+npot_e		= npou_e												;
+
+
+**nombre des éléments dans la langrine 
+** suivant sa hauteur (axe de z)
+nlan_v 		= 6													;
+** suivant sa  longeur (axe de x)
+** creation des differentes parties pour assurrer le contact avec les poteaux 
+***parties a proximite des extremites
+nlan_h1		= 6														;
+***parties sous poteaux
+nlan_h2		= npot_h												;
+*** parties entre les poteaux ou sous les travers
+nlan_h3		= npou_h												;
+
+** suivant sa  largeur (axe de y)
+** creation des differentes parties pour assurrer le contact avec les poteaux 
+***parties non connectees aux poteaux
+nlan_e1		= npot_e												;
+***parties connectees aux poteaux
+nlan_e2		= 5														;
+
+epsilon = 1E-6;
+
+***------------------------------------------------------------------***
+***----------------------DONNEES GEOMETRIQUES------------------------***
+***------------------------------------------------------------------***
+***Dimensions de la langrine
+HaLong 		= 0.25													;
+EpLong 		= 0.08													;
+LoLong 		= 3.3													;
+***Dimensions de la portique
+HaPort 		= 0.8 													;
+EpPort 		= 0.03 													;
+LoPort 		= 3.0 													;
+***Dimensions du poteau
+NBPot 		= 6														;
+LaPot 		= 0.06													;
+HaPot 		= 0.528													;
+EpPot 		= 0.03													;
+***Dimensions de la poutre (entre deux potaux) 
+HaPou 		= 0.06 													;
+EpPou 		= EpPort 												;
+LoPou 		= ((LoPort - (LaPot*NBPot)) / (NBPot-1))				;
+LIST LoPou;
+***dimensions partie de connexion entre poutre et poteaux
+HaNoeu 		= HaPou													;
+LoNoeu 		= LaPot													;
+EpNoeu 		= EpPot													;
+
+* LoTrav désigne la distance de poutre entre deux poteaux, de nu à nu
+LoTrav 		= LoPou - LaPot											;
+LIST lotrav															;
+
+* Valeurs déduites
+Debord 		= 0.5 * (LoLong - (((NBPot-1) * LoPou ) + (NBPot*LaPot)));
+LIST Debord															;
+EBORD		=  (EpLong - EpPot)										; 
+
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+***--------------------DEFINITION DE LA GEOMETRIE--------------------*** 
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+*------------------Géométrie de la longrine--------------------------***
+***------------------------------------------------------------------***
+* Définition de la longrine depuis sa face inférieure
+PLong1 		= 0. 0. 0												;
+PLong2 		= PLong1 PLUS (0. EpPot 0.)								;
+PLong3 		= PLong2 PLUS (0. EBORD 0.)								;
+PLong4 		= PLong3 PLUS (Debord 0. 0.)							;
+
+PLong5		= PLong4 PLUS (Lapot 0. 0.)								; 
+PLong6		= PLong5 PLUS (LoPou 0. 0.)								; 
+PLong7		= PLong6 PLUS (Lapot 0. 0.)								; 
+PLong8		= PLong7 PLUS (LoPou 0. 0.)								;
+PLong9		= PLong8 PLUS (Lapot 0. 0.)								; 
+PLong10		= PLong9 PLUS (LoPou 0. 0.)								;
+PLong11		= PLong10 PLUS (Lapot 0. 0.)							;
+PLong12		= PLong11 PLUS (LoPou 0. 0.)							;
+PLong13		= PLong12 PLUS (Lapot 0. 0.)							;
+PLong14		= PLong13 PLUS (LoPou 0. 0.)							;
+PLong15		= PLong14 PLUS (Lapot 0. 0.)							;
+PLong16		= PLong15 PLUS (Debord 0. 0.)							;
+
+PLong17		= PLong16 PLUS  (0. (0. - EBORD) 0.)					;
+PLong18		= PLong16 PLUS  (0. (0. - EpPot - EBORD) 0.)			;
+PLong19		= PLong15 PLUS  (0. (0. - EpPot - EBORD) 0.)			;
+PLong20		= PLong14 PLUS  (0. (0. - EpPot - EBORD) 0.)			;
+PLong21		= PLong13 PLUS  (0. (0. - EpPot - EBORD) 0.)			;
+PLong22		= PLong12 PLUS  (0. (0. - EpPot - EBORD) 0.)			;
+PLong23		= PLong11 PLUS  (0. (0. - EpPot - EBORD) 0.)			;
+PLong24		= PLong10 PLUS  (0. (0. - EpPot - EBORD) 0.)			;
+PLong25		= PLong9  PLUS  (0. (0. - EpPot - EBORD) 0.)			; 
+PLong26		= PLong8  PLUS  (0. (0. - EpPot - EBORD) 0.)			;
+PLong27		= PLong7  PLUS  (0. (0. - EpPot - EBORD) 0.)			; 
+PLong28		= PLong6  PLUS  (0. (0. - EpPot - EBORD) 0.)			;
+PLong29		= PLong5  PLUS  (0. (0. - EpPot - EBORD) 0.)			; 
+PLong30		= PLong4  PLUS  (0. (0. - EpPot - EBORD) 0.)			; 
+
+
+LLong1		= DROI nlan_e1 PLong1 PLong2							;
+LLong2		= DROI nlan_e2 PLong2 PLong3							;
+LLong3		= DROI nlan_h1 PLong3 PLong4							;
+LLong4		= DROI nlan_h2 PLong4 PLong5							;
+LLong5		= DROI nlan_h3 PLong5 PLong6							;
+LLong6		= DROI nlan_h2 PLong6 PLong7							;
+LLong7		= DROI nlan_h3 PLong7 PLong8							;
+LLong8		= DROI nlan_h2 PLong8 PLong9							;
+LLong9		= DROI nlan_h3 PLong9 PLong10							;
+LLong10		= DROI nlan_h2 PLong10 PLong11							;
+LLong11		= DROI nlan_h3 PLong11 PLong12							;
+LLong12		= DROI nlan_h2 PLong12 PLong13							;
+LLong13		= DROI nlan_h3 PLong13 PLong14							;
+LLong14		= DROI nlan_h2 PLong14 PLong15							;
+LLong15		= DROI nlan_h1 PLong15 PLong16							;
+
+LLong16 	= DROI nlan_e2 Plong16 PLong17 							;
+LLong17 	= DROI nlan_e1 Plong17 Plong18							;
+LLong18 	= DROI nlan_h1 PLong18 PLong19 							;						
+LLong19 	= DROI nlan_h2 PLong19 PLong20 							;
+LLong20 	= DROI nlan_h3 PLong20 PLong21 							;
+LLong21 	= DROI nlan_h2 PLong21 PLong22 							;
+LLong22 	= DROI nlan_h3 PLong22 PLong23 							;
+LLong23 	= DROI nlan_h2 PLong23 PLong24 							;
+LLong24 	= DROI nlan_h3 PLong24 PLong25 							;
+LLong25 	= DROI nlan_h2 PLong25 PLong26 							;
+LLong26 	= DROI nlan_h3 PLong26 PLong27 							;
+LLong27 	= DROI nlan_h2 PLong27 PLong28 							;
+LLong28 	= DROI nlan_h3 PLong28 PLong29 							;
+LLong29 	= DROI nlan_h2 PLong29 PLong30 							;
+LLong30 	= DROI nlan_h1 PLong30 PLong1 							;
+
+
+side1		= LLong1 'ET' LLong2									;
+
+side2		= LLong3 'ET' LLong4 'ET' LLong5 'ET' LLong6 'ET' LLong7 
+'ET' LLong8 'ET' LLong9 'ET' LLong10 'ET' LLong11 'ET' LLong12 'ET' 
+LLong13 'ET' LLong14 'ET' LLong15 									;
+side3		= LLong16 'ET' LLong17									;
+side4		=  LLong18 'ET' LLong19 'ET' LLong20 'ET' LLong21 'ET' 
+LLong22 'ET' LLong23 'ET' LLong24 'ET' LLong25 'ET' LLong26 
+'ET' LLong27 'ET' LLong28 'ET' LLong29 'ET' LLong30 				;
+
+
+
+CLong 		= side1 'ET' side2 'ET' side3 'ET' side4				; 
+ELIM CLONG 1.E-4													;
+SLong 		= (DALL side1 side2 side3 side4) COUL CARA				; 
+ELIM SLong 1.E-4													;
+*TRAC SLong;
+VLong 		= SLong VOLU nlan_v 'TRANS' (0. 0. HaLong)				;
+*TRAC VLong;
+nbEDLong 	= NBEL VLong											;
+LIST nbEDLong														;
+***------------------------------------------------------------------***
+*--------------------Géométrie des poteaux---------------------------***
+***------------------------------------------------------------------***
+
+* Définition du poteau 1 depuis sa face inférieure
+PPot1	 	= Debord 0. HaLong										;
+PPot2 		= Debord Eppot HaLong 									;
+PPot3 		= (Debord + LaPot) Eppot HaLong							;
+PPot4 		= (Debord + LaPot) 0. HaLong							;
+LPot1 		= DROI npot_e PPot1 PPot2								;
+LPot2 		= DROI npot_h PPot2 PPot3								;
+LPot3 		= DROI npot_e PPot3 PPot4								;
+LPot4 		= DROI npot_h PPot4 PPot1								;
+SPot1 		= (DALL LPot1 LPot2 LPot3 LPot4) COUL ROUG				; 
+VPot1 		= SPot1 VOLU npot_v 'TRANS' (0. 0. HaPot)				;
+*TRAC VPot1;
+nbEDPot1	= NBEL VPot1											;
+LIST nbEDPot1														;
+* Création des poteaux i (i= 2 à 6) par duplication du poteau i-1
+VPot2 		= VPot1 PLUS ((LoPou + LaPot) 0. 0.)					;
+VPot3 		= VPot2 PLUS ((LoPou + LaPot) 0. 0.)					;
+VPot4 		= VPot3 PLUS ((LoPou + LaPot) 0. 0.)					;
+VPot5 		= VPot4 PLUS ((LoPou + LaPot) 0. 0.)					;
+VPot6 		= VPot5 PLUS ((LoPou + LaPot) 0. 0.)					;
+***------------------------------------------------------------------***
+*----------------------Géométrie des noeuds--------------------------***
+***------------------------------------------------------------------***
+* Création des noeuds 1 à 6
+SNoeu1 		= SPot1 PLUS (0. 0. HaPot)								;
+VNoeu1 		= SNoeu1 VOLU npou_v 'TRANS' (0. 0. HaNoeu) COUL 'VERT'	;
+VNoeu2 		= VNoeu1 PLUS ((LoPou + LaPot) 0. 0.)					;
+VNoeu3 		= VNoeu2 PLUS ((LoPou + LaPot) 0. 0.)					;
+VNoeu4 		= VNoeu3 PLUS ((LoPou + LaPot) 0. 0.)					;
+VNoeu5 		= VNoeu4 PLUS ((LoPou + LaPot) 0. 0.)					;
+VNoeu6 		= VNoeu5 PLUS ((LoPou + LaPot) 0. 0.)					;
+
+***------------------------------------------------------------------***
+*--------------------Géométrie des poutres---------------------------***
+***------------------------------------------------------------------***
+************************************************************************
+******Procedure pour creer la geometrie d une poutre sans fissure*******
+************************************************************************
+DEBP MACKBEAM P*POINT Lon*FLOTTANT hau*FLOTTANT EPA*FLOTTANT 
+	N1*entier N2*entier N3*entier 								;	
+*** P : Coordonees du point d origine
+*** Lon : longueur de la poutre (distance entre deux poteaux (clear span)
+*** hau : hauteur de la section de poutre
+*** Epa : epaisseur de la section (b) suivant y
+*** n1 : nombre d elements dans la longueur
+*** n2 : nombre d elements dans la hauteur
+*** n3 : nombre d elements dans l epaisseur 
+PPou1		= P														;
+PPou2 		= PPou1 PLUS (0. Epa 0.)								;
+PPou3 		= PPou2 PLUS (Lon 0. 0.)								;
+PPou4 		= PPou1 PLUS (Lon 0. 0.)								;
+LPou1 		= DROI n3 PPou1 PPou2									;
+LPou2 		= DROI n1 PPou2 PPou3									;
+LPou3 		= DROI n3 PPou3 PPou4									;
+LPou4 		= DROI n1 PPou4 PPou1									;
+SPou 		= (DALL LPou1 LPou2 LPou3 LPou4) COUL BLEU				; 
+VPou 		= SPou VOLU n2 'TRANS' (0. 0. hau)						;
+*TRAC VPou1;
+nbEDPou 	= NBEL VPou												;
+LIST nbEDPou														;
+**** la procedure retourne le volume de la poutre cree
+FINP VPou															;
+
+************************************************************************
+******Procedure pour creer la geometrie d une poutre sans fissure*******
+************************************************************************
+DEBP MACKBEA2 P*POINT Lon*FLOTTANT hau*FLOTTANT EPA*FLOTTANT 
+	N1*entier N2*entier N3*entier 								;	
+*** P : Coordonees du point d origine
+*** Lon : longueur de la poutre (distance entre deux poteaux (clear span)
+*** hau : hauteur de la section de poutre
+*** Epa : epaisseur de la section (b) suivant y
+*** n1 : nombre d elements dans la longueur
+*** n2 : nombre d elements dans la hauteur
+*** n3 : nombre d elements dans l epaisseur 
+PPou1		= P														;
+PPou2 		= PPou1 PLUS (0. Epa 0.)								;
+PPou3 		= PPou2 PLUS (Lon 0. 0.)								;
+PPou4 		= PPou1 PLUS (Lon 0. 0.)								;
+LPou1 		= DROI n3 PPou1 PPou2									;
+LPou2 		= DROI n1 PPou2 PPou3									;
+LPou3 		= DROI n3 PPou3 PPou4									;
+LPou4 		= DROI n1 PPou4 PPou1									;
+SPou 		= (DALL LPou1 LPou2 LPou3 LPou4) COUL ORAN				; 
+VPou 		= SPou VOLU n2 'TRANS' (0. 0. hau)						;
+*TRAC VPou1;
+nbEDPou 	= NBEL VPou												;
+LIST nbEDPou														;
+**** la procedure retourne le volume de la poutre cree
+FINP VPou															;
+
+************************************************************************
+******Procedure pour creer la geometrie d une poutre avec fissure*******
+************************************************************************
+DEBP MACKBCRA P*POINT PF*POINT Lon*FLOTTANT hau*FLOTTANT EPA*FLOTTANT 
+	Lof*FLOTTANT Haf*FLOTTANT  N1*FLOTTANT N11*FLOTTANT N2*entier 
+	N3*entier N4*FLOTTANT N5*FLOTTANT  								;	
+*** P : Coordonees du point d origine de la poutre
+*** PF : Coordonees du point d origine de la fissure
+*** Lon : longueur de la poutre (distance entre deux poteaux (clear span)
+*** hau : hauteur de la section de poutre
+*** Epa : epaisseur de la section (b) suivant y
+*** Lof : longueur de la fissure (distance entre ses levres (epaisseur))
+*** haf : hauteur de la fissure suivant z 
+*** !!!!! haf doit etre inferieure a la moitie de la hauteur poutre hau
+
+*** n1 : densite d elements dans la partie de poutre avant fissure
+*** n11: densite d elements dans la partie de poutre apres fissure
+*** n2 : nombre d elements dans la hauteur de la section de la poutre
+*** n3 : nombre d elements dans l epaisseur de la poutre 
+*** n4 : densite d elements dans la hauteur de la fissure (haf)
+*** n5 : densite d elements dans l epaisser de la fissure (lof)
+DENS n1																;
+PPou1		= P														;
+DENS n4																;
+PPou2 		= PF													;
+DENS n5																;
+PPou3 		= PPou2 PLUS (0. 0. haf)								;
+PPou4 		= PPou3 PLUS (lof 0. 0.)								;
+DENS n4																;
+PPou5		= PPou2 PLUS (lof 0. 0.)								;
+DENS n11															;
+PPou6		= PPou1 PLUS (lon  0. 0.)								;
+DENS n11															;
+PPou7		= PPou6 PLUS (0. 0. hau)								;
+DENS n4																;
+PPou8		= PPou5 PLUS (0. 0. hau)								;
+DENS n5																;
+PPou9		= PPou8 PLUS (0. 0. (0. - haf))							;
+PPou10		= PPou9 PLUS ((0. - lof) 0. 0.)							; 
+DENS n4																;
+PPou11		= PPou2 PLUS (0. 0. hau)								;
+DENS n1																;
+PPou12		= PPou1 PLUS (0. 0. hau)								;
+  
+LPou1 		= DROI PPou1 PPou2 'DINI' n1 'DFIN' n4					;
+LPou2 		= DROI PPou2 PPou3 'DINI' n4 'DFIN' n5					;
+LPou3 		= DROI PPou3 PPou4 'DINI' n5 'DFIN' n5					;
+LPou4 		= DROI PPou4 PPou5 'DINI' n5 'DFIN' n4					;
+LPou5 		= DROI PPou5 PPou6 'DINI' n4 'DFIN' n11					;
+LPou6 		= DROI n2 PPou6 PPou7									;
+LPou7 		= DROI PPou7 PPou8 'DINI' n11 'DFIN' n4					;
+LPou8		= DROI PPou8 PPou9 'DINI' n4 'DFIN' n5					;
+LPou9		= DROI PPou9 PPou10 'DINI' n5 'DFIN' n5					;
+LPou10		= DROI PPou10 PPou11 'DINI' n5 'DFIN' n4				;
+LPou11		= DROI PPou11 PPou12 'DINI' n4 'DFIN' n1				;
+LPou12		= DROI n2 PPou12 PPou1									;											
+SPou 		= (SURF PLAN (LPou1 ET LPou2 ET LPou3 ET LPou4 ET LPou5
+ET LPou6 ET LPou7 ET LPou8 ET LPou9 ET LPou10 ET LPou11 ET LPou12 )) 
+COUL OLIV															; 
+VPou 		= SPou VOLU n3 'TRANS' (0. Epa 0.)						;
+*TRAC VPou1;
+nbEDPou 	= NBEL VPou												;
+LIST nbEDPou														;
+**** la procedure retourne le volume de la poutre cree
+FINP VPou															;
+
+
+
+***------------------------------------------------------------------***
+***-----------------------Poutres sans fissures----------------------***
+***------------------------------------------------------------------***
+
+VPou1		= MACKBEAM ((Debord + LoNoeu) 0. (HaLong + HaPot)) 
+					LoPou haPou EpPou npou_h npou_v npou_e			;
+					
+VPou2 		= MACKBEAM ((Debord + (2.0*LoNoeu) + LoPou) 0. 
+		(HaLong + HaPot)) LoPou haPou EpPou npou_h npou_v npou_e 	;
+
+VPou3 		= MACKBEAM ((Debord + (3.0*LoNoeu) + (2.0*LoPou)) 0. 
+		(HaLong + HaPot)) LoPou haPou EpPou npou_h npou_v npou_e 	;
+		
+VPou4 		= MACKBEAM ((Debord + (4.0*LoNoeu) + (3.0*LoPou)) 0. 
+		(HaLong + HaPot)) LoPou haPou EpPou npou_h npou_v npou_e 	;
+
+*Taille des éléments finis de la poutre dans les directions x et z
+sizeEFx = LoPou / npou_h;
+LIST sizeEFx;
+sizeEFz = HaPou / npou_v;
+LIST sizeEFz;
+
+* génération de la demi poutre avant la fissure		
+VPou5a 		= MACKBEAM ((Debord + (5.0*LoNoeu) + (4.0*LoPou)) 0. 
+		(HaLong + HaPot)) ((LoPou - 0.017032)/2.) haPou EpPou 
+		((npou_h - 1)/2) npou_v npou_e 	;
+
+* Génération de la fissure à mi travée	
+* Entier donnant le nombre d'éléments enlevés dans la hauteur de la poutre
+*nbEFfiss = 2;	
+*positionX = (Debord + (5.0*LoNoeu) + (4.0*LoPou) + (LoPou - sizeEFx)/2.);
+*VPou5f 		= MACKBEA2 (positionX 0. (HaLong + HaPot)) 
+*sizeEFx (haPou - nbEFfiss * sizeEFz) EpPou 
+* 1 (npou_v - nbEFfiss) npou_e 	;
+*nbEFfiss = 2;	
+*positionX = (Debord + (5.0*LoNoeu) + (4.0*LoPou) 
+*+ (LoPou - 0.017032)/2.);
+*VPou5f 		= MACKBEA2 
+*(((Debord + (5.0*LoNoeu) + (4.0*LoPou) + ((LoPou - 0.017032)/2.)) 
+*0. (HaLong + HaPot)) 
+*(0.017032 (haPou - (2. * 0.006)) EpPou) 
+* (1 (npou_v - 2) npou_e ))	;		
+
+* génération de la demi poutre après la fissure		
+*VPou5f 		= MACKBEA2 ((Debord + (5.0*LoNoeu) + (4.5*LoPou - (0.017032)/2.))
+* 0. 
+*		(HaLong + HaPot)) (0.017032) haPou EpPou 
+*		1 npou_v npou_e 	;
+
+
+*VPou5f = VPou5f PLUS ((0.05 + 2.*(LoPou + LoNoeu)) 0. 0.);
+
+VPou5f 		= MACKBEA2 ((Debord + (5.0*LoNoeu) + 
+(4.5*LoPou - ((0.017032)/2.)))
+ 0. 
+		(HaLong + HaPot + 0.006)) (0.017032) (haPou - (2. * 0.006)) EpPou 
+		1 (npou_v - 2) npou_e 	;
+
+* génération de la demi poutre après la fissure		
+VPou5b 		= MACKBEAM ((Debord + (5.0*LoNoeu) + (5.0*LoPou)) 0. 
+		(HaLong + HaPot)) ((-1.)*(LoPou - 0.017032)/2.) haPou EpPou 
+		((npou_h - 1)/2) npou_v npou_e 	;
+
+VPou5 = VPou5a ET VPou5f ET VPou5b;
+
+
+***------------------------------------------------------------------***
+***---------------------Création du volume global--------------------***
+***------------------------------------------------------------------***
+Vmulti 		= VPot1 ET VPot2 ET VPot3 ET VPot4 ET VPot5 ET VPot6
+ET VNoeu1 ET VNoeu2 ET VNoeu3 ET VNoeu4 ET VNoeu5 ET VNoeu6
+ET VPou1 ET VPou2 ET VPOU3 ET VPou4 ET VPou5;			
+ELIM VMulti 1.0E-3													;
+Vtot 		= VLong ET Vmulti										;
+LIST (NBEL Vtot)													;  
+ELIM VTot 1.0E-3													;
+SI TR																;
+t 		= NBNO VTOT 												;
+TRAC VTot CACH 'TITR' (CHAI 'nb des noeuds : 't'')					;
+*TRAC VTot 'BOIT' VPou5 CACH											;
+FINSI 																;
+
+PTPOU1 = VTot POIN PROC ((Debord + (1.0*LoNoeu) + (0.5*LoPou)) 
+(HaLong + HaPot + HaPou) 0.);
+PTPOU2 = VTot POIN PROC ((Debord + (2.0*LoNoeu) + (1.5*LoPou)) 
+(HaLong + HaPot + HaPou) 0.);
+PTPOU3 = VTot POIN PROC ((Debord + (3.0*LoNoeu) + (2.5*LoPou)) 
+(HaLong + HaPot + HaPou) 0.);
+PTPOU4 = VTot POIN PROC ((Debord + (4.0*LoNoeu) + (3.5*LoPou)) 
+(HaLong + HaPot + HaPou) 0.);
+PTPOU5 = VTot POIN PROC ((Debord + (5.0*LoNoeu) + (4.5*LoPou)) 
+(HaLong + HaPot + HaPou) 0.);
+
+*TRAC CACH VTot;
+
+RESU1 = COOR PTPOU1;
+LIST RESU1;
+
+
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+***---------------------DEFINITION DES MODELES-----------------------***
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+
+MoTot = MODE VTot MECANIQUE ELASTIQUE ISOTROPE				;					
+
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+***-------------------DEFINITION DES MATERIAUX-----------------------***
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+
+MaTot = MATE MoTot 'YOUN' 30.E9 'NU' 0.2 RHO 2500          	;  
+ 
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***                 
+***------------DEFINITION DES CONDITIONS AUX LIMITES-----------------***
+***------------------------------------------------------------------***
+***------------------------------------------------------------------***
+* surface inferieure de la longrine : encastrement des appuis
+CLLong 		= BLOQ UX UY UZ SLong 									;
+
+* Condition limite de symétrie
+PXZ1	 	= (VTOT COOR 2) POIN MINI								;
+CLsym		= BLOQ UY PXZ1											;
+						
+                      
+***------------------
+***Conditions totales
+***------------------
+CLTot 		= CLLong 'ET' CLsym										;
+
+***----------------
+*** Rigidite totale
+***----------------
+RigStr 		= RIGI MoTot MaTot 							;
+RigTot 		= RigStr 'ET' CLTot 						;
+
+***---------------
+*** Application d'une force
+***---------------
+PTFORCE = VTot POIN PROC ((2.8) (0.568) (0.0));
+RESUFORC = COOR PTFORCE;
+LIST RESUFORC;
+
+*** Application de l'effort
+TITR 'FORCE APPLIQUEE A UNE EXTREMITE' ;
+DT       = 0.001;
+NT       = 20;
+* L_TIM    = 'PROG' 0.0 'PAS' DT 'NPAS' NT ;
+* L_FOR    = 'PROG' 0. 0.2 0.4 0.6 0.8 1. 0.8 0.6 0.4 0.2 0.   (NT - 10) * 0. ;
+
+L_TIM    = 'PROG' 0.0 'PAS' DT 'NPAS' NT ;
+L_FOR    = 'PROG' 0.  0.5 1. 0.5  0.   (NT - 4) * 0. ;
+EV_FOR   = 'EVOL' 'MANU' 'TEMPS(S)' L_TIM 'FORCE(N)' L_FOR ;
+*DESS EV_FOR ;
+
+BFOR		= ((Debord + (5.0*LoNoeu) + (4.75*LoPou)) 0. 
+				(HaLong + HaPot + haPou))					;
+BFOR 		= Vtot POIN PROC BFOR							;
+*TRAC VTot 'BOIT' VPou5 CACH;
+
+PTMIPOU1 = ((Debord + (1.0*LoNoeu) + (0.5*LoPou)) 0. 
+				(HaLong + HaPot + haPou))					;
+PTMIPOU2 = ((Debord + (2.0*LoNoeu) + (1.5*LoPou)) 0. 
+				(HaLong + HaPot + haPou))					;
+PTMIPOU3 = ((Debord + (3.0*LoNoeu) + (2.5*LoPou)) 0. 
+				(HaLong + HaPot + haPou))					;
+PTMIPOU4 = ((Debord + (4.0*LoNoeu) + (3.5*LoPou)) 0. 
+				(HaLong + HaPot + haPou))					;
+PTMIPOU5 = ((Debord + (5.0*LoNoeu) + (4.5*LoPou)) 0. 
+				(HaLong + HaPot + haPou))					;				
+
+*TRAC CACH VTot;
+
+RESU1 = COOR PTMIPOU1;
+LIST RESU1;
+RESU2 = COOR PTMIPOU2;
+LIST RESU2;
+RESU3 = COOR PTMIPOU3;
+LIST RESU3;
+RESU4 = COOR PTMIPOU4;
+LIST RESU4;
+RESU5 = COOR PTMIPOU5;
+LIST RESU5;
+
+fmax = 500.;
+FORC1		= FORC 'FZ' fmax BFOR							;
+ChargTot = CHAR FORC1 EV_FOR; 
+
+MassTot = MASS MoTot MaTot;
+CH_DEPI = MANU CHPO 3 VTot UX 0.0 UY 0.0 UZ 0.0 ;
+CH_VITI = MANU CHPO 3 VTot UX 0.0 UY 0.0 UZ 0.0 ;
+
+TAB_DYN = TABLE                                       ;
+TAB_DYN.'DEPL' = CH_DEPI                                ;
+TAB_DYN.'VITE' = CH_VITI                                ;
+TAB_DYN.'RIGI' = RigTot                           ;
+TAB_DYN.'MASS' = MassTot                             ;
+*TAB_DYN.'AMOR' = AMO_S                                  ;
+TAB_DYN.'CHAR' = ChargTot                              ;
+TAB_DYN.'TEMPS_CALCULES' = L_TIM;
+RESU = DYNAMIC TAB_DYN ;
+
+*-----------------------------------------------------------------------
+*                          POST-TRAITEMENT
+*-----------------------------------------------------------------------
+
+POI = TABLE ;
+POI.1 = VTot POIN PROC PTMIPOU1 ;
+POI.2 = VTot POIN PROC PTMIPOU2 ;
+POI.3 = VTot POIN PROC PTMIPOU3 ;
+POI.4 = VTot POIN PROC PTMIPOU4 ;
+POI.5 = VTot POIN PROC PTMIPOU5 ;
+
+
+NP = DIME POI ;
+L_TEM = PROG NT * 0.0 ;
+L_ENR = PROG NT * 0.0 ;
+L_D = TABLE ;
+
+I = 1 ;
+REPE B1 NP ;
+L_D.I  = PROG NT * 0.0 ;
+I = I + 1 ;
+FIN B1 ;
+
+I_TEM = 0 ;
+REPETER B2 NT ;
+  I_TEM = I_TEM + 1           ;
+  TEM_I = RESU.I_TEM.'TEMP'   ;
+  REMP L_TEM I_TEM TEM_I      ;
+
+  CHD_I = RESU.I_TEM.'DEPL'   ;
+  EPS_I = EPSI MoTot CHD_I ;
+  SIG_I = SIGM MoTot MaTot CHD_I ;
+  ENR_I = ENER MoTot EPS_I SIG_I ;
+  ENR_I = INTG MoTot ENR_I ;
+  I = 1 ;
+    REPE B2_1 NP ;
+    REMP L_D.I I_TEM (EXTR CHD_I POI.I UZ)  ;
+    REMP L_ENR I_TEM ENR_I ;
+  I = I + 1 ;
+  FIN B2_1 ;
+
+FIN B2 ;
+
+EV_DEP = TABLE ;
+
+I = 1 ;
+REPE B3 NP ;
+* JPP : Z_I = COOR 3 POI.I ;
+Z_I = COOR 1 POI.I ;
+
+TITRE 'DEPLACEMENT POINT' I ' Z =' Z_I ' M' ;
+EV_DEP.I = EVOL MANU 'TEMPS (S)' L_TEM 'DEPL (M)' L_D.I ;
+I = I + 1 ;
+FIN B3 ;
+
+DESS ((COUL ROUG EV_DEP.1) ET (COUL VERT EV_DEP.2) ET
+        (COUL BLEU EV_DEP.3) ET 
+        (COUL VIOL EV_DEP.4) ET
+        (COUL CARA EV_DEP.5)) MIMA ;
+		
